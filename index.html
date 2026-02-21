@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stal Grudziądz - System v6.3.3</title>
+    <title>Stal Grudziądz - System v6.3.4</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -34,5 +34,218 @@
 </head>
 <body>
 
-<div id="login-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center;
-    
+<div id="login-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:var(--main); color:white;">
+    <img src="https://stalgrudziadz.pl/templates/ks_stal_grudziadz/images/designer/9a7d6bfd84586bf368f6e93fcaf65c4c_logo_stal.png" style="width:120px; margin-bottom:20px;">
+    <h2>STAL GRUDZIĄDZ</h2>
+    <input type="text" id="pass-input" placeholder="KOD DOSTĘPU" style="padding:15px; border-radius:8px; width:240px; text-align:center; font-size:1.2rem; border:none; margin-bottom:10px;">
+    <button class="btn btn-gold" style="width:240px;" onclick="handleLogin()">ZALOGUJ</button>
+</div>
+
+<div id="app-content">
+    <header>AKADEMIA STAL GRUDZIĄDZ</header>
+
+    <div id="tab1" class="tab active">
+        <h3>📅 Grafik Treningów</h3>
+        <div id="admin-add-schedule" class="hidden"><button class="btn btn-main" onclick="addSchedule()">+ DODAJ TRENING</button></div>
+        <div id="schedule-list"></div>
+    </div>
+
+    <div id="tab2" class="tab">
+        <div class="card">
+            <div id="stopwatch-display" style="font-size:3rem; font-family:monospace; text-align:center; margin-bottom:10px;">00:00.00</div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-main" onclick="toggleStopwatch()" id="sw-btn">START</button>
+                <button class="btn btn-red" onclick="resetStopwatch()" style="width:30%;">R</button>
+            </div>
+        </div>
+        <button class="btn btn-gold" style="margin-bottom:15px;" onclick="showStats()">📊 STATYSTYKI FREKWENCJI</button>
+        <div id="stats-container" class="card hidden"></div>
+        <h3>👥 Lista Obecności</h3>
+        <div id="attendance-list"></div>
+    </div>
+
+    <div id="tab3" class="tab">
+        <div id="admin-section" class="hidden">
+            <h4>Trenerzy</h4>
+            <button class="btn btn-gold" style="margin-bottom:10px;" onclick="createTrainer()">+ DODAJ TRENERA</button>
+            <div id="trainers-list"></div>
+            <hr>
+        </div>
+        <h4>Zawodnicy</h4>
+        <button class="btn btn-main" onclick="createPlayer()">+ DODAJ ZAWODNIKA</button>
+        <div id="players-list-manage"></div>
+    </div>
+
+    <div id="tab4" class="tab">
+        <div class="card" style="text-align:center;">
+            <h2 id="p-child">-</h2>
+            <div id="p-status"></div>
+            <hr>
+            <h4>Nieobecność</h4>
+            <button class="btn btn-red" id="absence-btn" onclick="reportAbsence()">ZGŁOŚ NA DZIŚ</button>
+        </div>
+    </div>
+
+    <nav>
+        <button class="nav-btn nav-active" onclick="showTab(1, this)">📅 Grafik</button>
+        <button id="nav-field" class="nav-btn hidden" onclick="showTab(2, this)">⚽ Boisko</button>
+        <button id="nav-manage" class="nav-btn hidden" onclick="showTab(3, this)">👥 Zarządzaj</button>
+        <button id="nav-parent" class="nav-btn hidden" onclick="showTab(4, this)">👤 Profil</button>
+    </nav>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAM0c--5k6HpSXxH0n-kCzT1GibFHmVQ-E",
+  authDomain: "trainee-manager-5ef5c.firebaseapp.com",
+  databaseURL: "https://trainee-manager-5ef5c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "trainee-manager-5ef5c",
+  storageBucket: "trainee-manager-5ef5c.firebasestorage.app",
+  messagingSenderId: "349575493146",
+  appId: "1:349575493146:web:06cfe63f0242d6247f83a3"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let session = { role: '', groupId: '', id: '' };
+
+function handleLogin() {
+    const code = document.getElementById('pass-input').value.trim().toUpperCase();
+    if(!code) return;
+    if(code === "ADMIN") { session.role = 'admin'; startApp(); return; }
+    db.ref().once('value', snap => {
+        const data = snap.val() || {};
+        let found = null;
+        if(data.trainers) Object.entries(data.trainers).forEach(([id, t]) => { if(t.code === code) found = {...t, id, role: 'trainer'}; });
+        if(!found && data.users) Object.entries(data.users).forEach(([id, u]) => { if(u.code === code) found = {...u, id, role: 'parent'}; });
+        if(found) { session = found; startApp(); } else { alert("Zły kod!"); }
+    });
+}
+
+function startApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-content').style.display = 'block';
+    if(session.role === 'admin' || session.role === 'trainer') {
+        document.getElementById('nav-field').classList.remove('hidden');
+        document.getElementById('nav-manage').classList.remove('hidden');
+        if(session.role === 'admin') document.getElementById('admin-section').classList.remove('hidden');
+        if(session.role === 'admin') document.getElementById('admin-add-schedule').classList.remove('hidden');
+    } else { document.getElementById('nav-parent').classList.remove('hidden'); }
+    sync();
+}
+
+function sync() {
+    const today = new Date().toISOString().slice(0, 10);
+    db.ref().on('value', snap => {
+        const d = snap.val() || {};
+        const sL = document.getElementById('schedule-list'); sL.innerHTML = '';
+        if(d.schedule) Object.entries(d.schedule).forEach(([id, s]) => {
+            if(session.role === 'admin' || s.groupId === session.groupId) {
+                sL.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;"><div><b>${s.d}</b><br>${s.t}</div>${session.role==='admin'?`<button class="btn-edit" onclick="del('schedule/${id}')">X</button>`:''}</div>`;
+            }
+        });
+        const tL = document.getElementById('trainers-list'); tL.innerHTML = '';
+        if(session.role === 'admin' && d.trainers) {
+            Object.entries(d.trainers).forEach(([id, t]) => {
+                tL.innerHTML += `<div class="card" style="display:flex; justify-content:space-between;"><div><b>${t.name}</b><br><small>Kod: ${t.code}</small></div><button class="btn-edit" onclick="editTrainer('${id}',${JSON.stringify(t).replace(/"/g, '&quot;')})">E</button></div>`;
+            });
+        }
+        const aL = document.getElementById('attendance-list'); aL.innerHTML = '';
+        const pL = document.getElementById('players-list-manage'); pL.innerHTML = '';
+        if(d.users) {
+            let grps = {};
+            Object.entries(d.users).forEach(([id, u]) => {
+                if(session.role === 'admin' || u.groupId === session.groupId) {
+                    if(!grps[u.groupId]) grps[u.groupId] = [];
+                    grps[u.groupId].push({id, ...u});
+                }
+            });
+            Object.keys(grps).sort().forEach(g => {
+                aL.innerHTML += `<div class="group-header">${g}</div>`;
+                pL.innerHTML += `<div class="group-header">${g}</div>`;
+                grps[g].forEach(u => {
+                    const att = (d.attendance && d.attendance[today] && d.attendance[today][u.id]) || 'none';
+                    aL.innerHTML += `<div class="player-row"><div><b>${u.child}</b></div><button class="attendance-dot ${att==='present'?'dot-present':att==='absent'?'dot-absent':'dot-none'}" onclick="toggleAttendance('${u.id}','${att}')">${att==='present'?'✔':att==='absent'?'✘':'?'}</button></div>`;
+                    const pC = u.paid ? '#2ecc71' : '#eee';
+                    pL.innerHTML += `<div class="card"><div style="display:flex; justify-content:space-between; align-items:center;"><div><b>${u.child}</b><br><small>Kod: <span class="code-tag">${u.code}</span></small></div><div style="display:flex; gap:5px;"><button class="btn-edit" onclick="editPlayer('${u.id}',${JSON.stringify(u).replace(/"/g, '&quot;')})">E</button><button class="btn" style="padding:5px; background:${pC}" onclick="pay('${u.id}',${u.paid})">$</button></div></div></div>`;
+                });
+            });
+        }
+        if(session.role === 'parent' && d.users && d.users[session.id]) {
+            const u = d.users[session.id];
+            document.getElementById('p-child').innerText = u.child;
+            document.getElementById('p-status').innerHTML = u.paid ? '<h3 style="color:green">OPŁACONE</h3>' : '<h3 style="color:red">DO WPŁATY</h3>';
+        }
+    });
+}
+
+function showStats() {
+    const c = document.getElementById('stats-container'); c.classList.toggle('hidden');
+    if(c.classList.contains('hidden')) return;
+    db.ref().once('value', snap => {
+        const d = snap.val(); if(!d || !d.attendance) return;
+        const dates = Object.keys(d.attendance);
+        let h = '<h4>Frekwencja:</h4>';
+        Object.entries(d.users).forEach(([id, u]) => {
+            if(session.role === 'admin' || u.groupId === session.groupId) {
+                let cnt = 0; dates.forEach(dt => { if(d.attendance[dt][id] === 'present') cnt++; });
+                h += `<div class="stat-row"><span>${u.child}</span><b>${Math.round(cnt/dates.length*100)}%</b></div>`;
+            }
+        });
+        c.innerHTML = h;
+    });
+}
+function reportAbsence() {
+    const today = new Date().toISOString().slice(0, 10);
+    db.ref(`attendance/${today}/${session.id}`).set('absent').then(() => alert("Zgłoszono!"));
+}
+function toggleAttendance(id, cur) {
+    const today = new Date().toISOString().slice(0, 10);
+    const nxt = cur === 'none' ? 'present' : (cur === 'present' ? 'absent' : 'none');
+    db.ref(`attendance/${today}/${id}`).set(nxt);
+}
+function pay(id, s) { db.ref('users/'+id).update({ paid: !s }); }
+function del(p) { if(confirm("Usunąć?")) db.ref(p).remove(); }
+function editPlayer(id, old) {
+    const n = prompt("Nazwisko:", old.child); const g = prompt("Grupa:", old.groupId);
+    if(n) db.ref('users/'+id).update({ child: n, groupId: g });
+}
+function editTrainer(id, old) {
+    const n = prompt("Imię:", old.name); const c = prompt("Kod:", old.code);
+    if(n) db.ref('trainers/'+id).update({ name: n, code: c });
+}
+function createPlayer() {
+    const n = prompt("Nazwisko:"); const g = prompt("Grupa:");
+    const c = n.substring(0,3).toUpperCase() + Math.floor(100+Math.random()*899);
+    if(n) db.ref('users').push({ child: n, groupId: g, code: c, paid: false });
+}
+function createTrainer() {
+    const n = prompt("Imię:"); const g = prompt("Grupa:");
+    const c = "TRN" + Math.floor(100+Math.random()*899);
+    if(n) db.ref('trainers').push({ name: n, groupId: g, code: c });
+}
+function addSchedule() {
+    const d = prompt("Dzień:"); const t = prompt("Godz:"); const g = prompt("Grupa:");
+    if(d && t) db.ref('schedule').push({ d, t, groupId: g });
+}
+function showTab(n, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab'+n).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
+    el.classList.add('nav-active');
+}
+let st, int, rn = false;
+function toggleStopwatch() {
+    const b = document.getElementById('sw-btn');
+    if(!rn) { st = Date.now() - (st || 0); int = setInterval(updSW, 10); b.innerText = "STOP"; rn = true; }
+    else { clearInterval(int); st = Date.now() - st; b.innerText = "START"; rn = false; }
+}
+function updSW() {
+    const df = Date.now() - st;
+    const m = Math.floor(df/60000); const s = Math.floor((df%60000)/1000); const ms = Math.floor((df%1000)/10);
+    document.getElementById('stopwatch-display').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms.toString().padStart(2,'0')}`;
+}
+function resetStopwatch() { clearInterval(int); st = 0; rn = false; document.getElementById('stopwatch-display').innerText = "00:00.00"; document.getElementById('sw-btn').innerText = "START"; }
+</script>
+</body>
+</html>
