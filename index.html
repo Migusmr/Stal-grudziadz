@@ -3,96 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stal Grudziądz - System Pro</title>
+    <title>Stal Grudziądz - Trener PRO</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --main: #1a2a6c; --gold: #f2a900; --red: #e74c3c; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
-        header { background: var(--main); color: white; padding: 10px; text-align: center; border-bottom: 4px solid var(--gold); display: flex; align-items: center; justify-content: center; position: sticky; top: 0; z-index: 100; }
-        header img { height: 40px; margin-right: 10px; }
-        
-        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--main); color: white; }
-        .login-input { padding: 15px; border-radius: 8px; border: none; width: 280px; margin: 10px 0; text-align: center; font-size: 1rem; }
+        :root { --main: #1a2a6c; --gold: #f2a900; --red: #e74c3c; --green: #2ecc71; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; color: #333; }
+        header { background: var(--main); color: white; padding: 12px; text-align: center; border-bottom: 4px solid var(--gold); position: sticky; top: 0; z-index: 100; font-weight: bold; }
         
         #app-content { display: none; padding-bottom: 90px; }
         .tab { display: none; padding: 15px; }
         .active { display: block; }
         
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--main); }
-        .group-header { background: #e9ecef; padding: 8px 12px; border-radius: 6px; margin: 15px 0 8px 0; font-weight: bold; color: var(--main); border-bottom: 2px solid var(--gold); }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 6px solid var(--main); }
+        .group-header { background: var(--main); color: white; padding: 10px; border-radius: 8px; margin: 20px 0 10px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
         
-        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; }
-        .btn-gold { background: var(--gold); color: var(--main); }
-        .btn-main { background: var(--main); color: white; }
-        .btn-red { background: var(--red); color: white; padding: 6px 10px; width: auto; font-size: 0.8rem; border-radius: 4px; }
+        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-main { background: var(--main); color: white; width: 100%; margin-bottom: 10px; }
+        .btn-gold { background: var(--gold); color: var(--main); width: 100%; }
         
-        /* Stoper */
-        #stopwatch-display { font-size: 2.5rem; font-family: monospace; font-weight: bold; color: var(--main); margin: 10px 0; text-align: center; }
-        .timer-btns { display: flex; gap: 5px; }
+        /* Styl listy obecności */
+        .player-row { display: flex; align-items: center; justify-content: space-between; background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #ddd; }
+        .attendance-dot { width: 45px; height: 45px; border-radius: 50%; border: none; font-size: 1.2rem; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .dot-present { background: var(--green); }
+        .dot-absent { background: var(--red); }
+        .dot-none { background: #ccc; }
         
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; height: 70px; border-top: 1px solid #ddd; z-index: 1000; }
-        .nav-btn { flex: 1; border: none; background: none; font-size: 0.7rem; color: #888; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .call-btn { background: #3498db; color: white; padding: 8px; border-radius: 50%; text-decoration: none; width: 35px; height: 35px; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 1.1rem; }
+
+        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; height: 75px; border-top: 2px solid #ddd; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .nav-btn { flex: 1; border: none; background: none; font-size: 0.75rem; color: #7f8c8d; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .nav-active { color: var(--main); font-weight: bold; border-top: 4px solid var(--gold); }
+        
+        #stopwatch-display { font-size: 3.5rem; font-family: 'Courier New', monospace; font-weight: bold; color: var(--main); margin: 15px 0; text-align: center; background: #eee; border-radius: 10px; padding: 10px; }
         .hidden { display: none !important; }
-        .flex { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-<div id="login-screen">
-    <img src="https://stalgrudziadz.pl/templates/ks_stal_grudziadz/images/designer/9a7d6bfd84586bf368f6e93fcaf65c4c_logo_stal.png" style="width:120px; margin-bottom:20px;">
-    <h1 style="margin:0;">STAL GRUDZIĄDZ</h1>
-    <input type="text" id="pass-input" class="login-input" placeholder="WPISZ KOD">
-    <button class="btn btn-gold" style="width:280px;" onclick="handleLogin()">ZALOGUJ SIĘ</button>
+<div id="login-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--main); color: white;">
+    <img src="https://stalgrudziadz.pl/templates/ks_stal_grudziadz/images/designer/9a7d6bfd84586bf368f6e93fcaf65c4c_logo_stal.png" style="width:140px; margin-bottom:20px;">
+    <h2>PANEL AKADEMII</h2>
+    <input type="text" id="pass-input" placeholder="WPISZ KOD" style="padding:15px; border-radius:8px; border:none; width:260px; text-align:center; font-size:1.2rem; margin-bottom:15px;">
+    <button class="btn btn-gold" style="width:260px;" onclick="handleLogin()">WEJDŹ</button>
 </div>
 
 <div id="app-content">
-    <header><img src="https://stalgrudziadz.pl/templates/ks_stal_grudziadz/images/designer/9a7d6bfd84586bf368f6e93fcaf65c4c_logo_stal.png"><span>AKADEMIA STAL</span></header>
+    <header>STAL GRUDZIĄDZ</header>
 
     <div id="tab1" class="tab active">
-        <h3>📅 Grafik Treningów</h3>
+        <h3>📅 Grafik</h3>
         <div id="admin-add-schedule" class="hidden">
-            <button class="btn btn-main" onclick="addSchedule()">+ DODAJ WPIS DO GRAFIKU</button>
+            <button class="btn btn-main" onclick="addSchedule()">+ DODAJ TRENING</button>
         </div>
         <div id="schedule-list"></div>
     </div>
 
     <div id="tab2" class="tab">
         <div class="card">
-            <h3>⏱️ Stoper Trenera</h3>
             <div id="stopwatch-display">00:00.00</div>
-            <div class="timer-btns">
+            <div style="display:flex; gap:10px;">
                 <button class="btn btn-main" onclick="toggleStopwatch()" id="sw-btn">START</button>
                 <button class="btn btn-gold" onclick="lapStopwatch()">LAP</button>
-                <button class="btn btn-red" onclick="resetStopwatch()">RESET</button>
+                <button class="btn btn-red" onclick="resetStopwatch()" style="background:var(--red); color:white; width:30%;">R</button>
             </div>
-            <div id="laps" style="margin-top:10px; font-size:0.8rem; max-height:80px; overflow-y:auto;"></div>
         </div>
-        <h3>📋 Baza Ćwiczeń</h3>
-        <button class="btn btn-main" onclick="addExercise()">+ DODAJ ĆWICZENIE</button>
-        <div id="exercises-list"></div>
+        
+        <div id="trainer-attendance-section">
+            <h3>👥 Obecność na dzisiaj</h3>
+            <div id="attendance-list"></div>
+        </div>
     </div>
 
     <div id="tab3" class="tab">
-        <div id="admin-only-tools" class="hidden">
-            <div class="card" style="background:var(--main); color:white; text-align:center;">
-                <small>WPŁYWY (SUMA):</small>
-                <div id="total-revenue" style="font-size:1.5rem; font-weight:bold; color:var(--gold);">0 PLN</div>
-            </div>
+        <div id="admin-only" class="hidden">
             <button class="btn btn-gold" onclick="createTrainer()">+ DODAJ TRENERA</button>
             <div id="trainers-list"></div>
-            <hr>
         </div>
         <button class="btn btn-main" onclick="createPlayer()">+ DODAJ ZAWODNIKA</button>
-        <div id="players-list"></div>
+        <div id="players-list-manage"></div>
     </div>
 
     <div id="tab4" class="tab">
-        <div class="card" style="text-align:center;">
-            <h2 id="p-child-name">-</h2>
+        <div class="card" id="parent-card" style="text-align:center;">
+            <h2 id="p-child">-</h2>
             <div id="p-status"></div>
-            <p id="p-group-info" style="color:#666;"></p>
         </div>
     </div>
 
@@ -100,8 +95,7 @@
         <button class="nav-btn nav-active" onclick="showTab(1, this)">📅 Grafik</button>
         <button id="nav-field" class="nav-btn hidden" onclick="showTab(2, this)">⚽ Boisko</button>
         <button id="nav-manage" class="nav-btn hidden" onclick="showTab(3, this)">👥 Zarządzaj</button>
-        <button id="nav-parent" class="nav-btn hidden" onclick="showTab(4, this)">👤 Mój Profil</button>
-        <button class="nav-btn" onclick="location.reload()">🔒 Wyjdź</button>
+        <button id="nav-parent" class="nav-btn hidden" onclick="showTab(4, this)">👤 Profil</button>
     </nav>
 </div>
 
@@ -119,7 +113,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-let session = { role: '', groupId: '', id: '', child: '' };
+let session = { role: '', groupId: '', id: '' };
 
 function handleLogin() {
     const code = document.getElementById('pass-input').value.trim().toUpperCase();
@@ -130,119 +124,120 @@ function handleLogin() {
             let found = null;
             if(data.trainers) Object.entries(data.trainers).forEach(([id, t]) => { if(t.code === code) found = {...t, id, role: 'trainer'}; });
             if(!found && data.users) Object.entries(data.users).forEach(([id, u]) => { if(u.code === code) found = {...u, id, role: 'parent'}; });
-            
-            if(found) { session = found; startApp(); }
-            else { alert("Niepoprawny kod!"); }
+            if(found) { session = found; startApp(); } else { alert("Błąd kodu!"); }
         });
     }
 }
 
 function startApp() {
-    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-content').style.display = 'block';
     
-    if(session.role === 'admin') {
-        document.getElementById('nav-manage').classList.remove('hidden');
+    if(session.role === 'admin' || session.role === 'trainer') {
         document.getElementById('nav-field').classList.remove('hidden');
-        document.getElementById('admin-only-tools').classList.remove('hidden');
-        document.getElementById('admin-add-schedule').classList.remove('hidden');
-    } else if(session.role === 'trainer') {
         document.getElementById('nav-manage').classList.remove('hidden');
-        document.getElementById('nav-field').classList.remove('hidden');
+        if(session.role === 'admin') {
+            document.getElementById('admin-only').classList.remove('hidden');
+            document.getElementById('admin-add-schedule').classList.remove('hidden');
+        }
     } else {
         document.getElementById('nav-parent').classList.remove('hidden');
-        document.getElementById('p-child-name').innerText = session.child;
-        document.getElementById('p-group-info').innerText = "Grupa: " + session.groupId;
     }
     sync();
 }
 
 function sync() {
+    const today = new Date().toISOString().slice(0, 10);
     db.ref().on('value', snap => {
         const d = snap.val() || {};
         
-        // 1. Grafik
+        // 1. GRAFIK
         const sL = document.getElementById('schedule-list'); sL.innerHTML = '';
         if(d.schedule) Object.entries(d.schedule).forEach(([id, s]) => {
             if(session.role === 'admin' || s.groupId === session.groupId) {
-                sL.innerHTML += `<div class="card flex">
-                    <div><b>${s.d}</b> - ${s.t}<br><small>Grupa: ${s.groupId}</small></div>
-                    ${session.role === 'admin' ? `<button class="btn-red" onclick="del('schedule/${id}')">USUŃ</button>` : ''}
-                </div>`;
+                sL.innerHTML += `<div class="card"><b>${s.d}</b><br>${s.t} <small>(${s.groupId})</small></div>`;
             }
         });
 
-        // 2. Ćwiczenia
-        const exL = document.getElementById('exercises-list'); exL.innerHTML = '';
-        if(d.exercises) Object.entries(d.exercises).forEach(([id, ex]) => {
-            exL.innerHTML += `<div class="card flex"><div><b>${ex.title}</b><br><small>${ex.desc}</small></div>${session.role==='admin'?`<button class="btn-red" onclick="del('exercises/${id}')">X</button>`:''}</div>`;
-        });
-
-        // 3. Trenerzy
-        const tL = document.getElementById('trainers-list'); tL.innerHTML = '<h4>Trenerzy:</h4>';
-        if(d.trainers && session.role === 'admin') {
-            Object.entries(d.trainers).forEach(([id, t]) => {
-                tL.innerHTML += `<div class="card flex"><div><b>${t.name}</b><br>Kod: ${t.code} | Grupa: ${t.groupId}</div><button class="btn-red" onclick="del('trainers/${id}')">USUŃ</button></div>`;
-            });
-        }
-
-        // 4. Zawodnicy
-        const pL = document.getElementById('players-list'); pL.innerHTML = '<h4>Zawodnicy:</h4>';
-        let groups = {}; let total = 0;
+        // 2. OBECNOŚĆ (BOISKO)
+        const aL = document.getElementById('attendance-list'); aL.innerHTML = '';
+        const pL_manage = document.getElementById('players-list-manage'); pL_manage.innerHTML = '';
+        
         if(d.users) {
+            let groups = {};
             Object.entries(d.users).forEach(([id, u]) => {
                 if(session.role === 'admin' || u.groupId === session.groupId) {
                     if(!groups[u.groupId]) groups[u.groupId] = [];
                     groups[u.groupId].push({id, ...u});
-                    if(u.paid) total += parseInt(u.fee || 0);
                 }
             });
-            Object.keys(groups).sort().forEach(g => {
-                pL.innerHTML += `<div class="group-header">GRUPA: ${g}</div>`;
-                groups[g].forEach(u => {
-                    pL.innerHTML += `<div class="card flex">
-                        <div><b>${u.child}</b><br><small>Kod: ${u.code}</small></div>
-                        <div class="flex">
-                            <button class="btn" style="width:auto; background:${u.paid?'#2ecc71':'#eee'}" onclick="pay('${u.id}',${u.paid})">${u.paid?'OK':'ZAPŁAĆ'}</button>
-                            ${session.role==='admin' ? `<button class="btn-red" style="margin-left:5px" onclick="del('users/${u.id}')">X</button>` : ''}
+
+            Object.keys(groups).sort().forEach(gName => {
+                aL.innerHTML += `<div class="group-header">GRUPA: ${gName}</div>`;
+                pL_manage.innerHTML += `<div class="group-header">GRUPA: ${gName}</div>`;
+                
+                groups[gName].forEach(u => {
+                    // Widok Boisko (Obecność)
+                    const attStatus = (d.attendance && d.attendance[today] && d.attendance[today][u.id]) || 'none';
+                    const dotClass = attStatus === 'present' ? 'dot-present' : (attStatus === 'absent' ? 'dot-absent' : 'dot-none');
+                    const dotIcon = attStatus === 'present' ? '✔' : (attStatus === 'absent' ? '✘' : '?');
+
+                    aL.innerHTML += `<div class="player-row">
+                        <div>
+                            <a href="tel:${u.phone}" class="call-btn">📞</a>
+                            <b>${u.child}</b>
                         </div>
+                        <button class="attendance-dot ${dotClass}" onclick="toggleAttendance('${u.id}', '${attStatus}')">${dotIcon}</button>
+                    </div>`;
+
+                    // Widok Zarządzanie
+                    pL_manage.innerHTML += `<div class="card flex" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div><b>${u.child}</b><br><small>Tel: ${u.phone || 'brak'}</small></div>
+                        <button class="btn" style="width:auto; background:${u.paid?'#2ecc71':'#eee'}" onclick="pay('${u.id}',${u.paid})">${u.paid?'OPŁACONE':'BRAK WPŁATY'}</button>
                     </div>`;
                 });
             });
         }
-        if(session.role === 'admin') document.getElementById('total-revenue').innerText = total + " PLN";
 
-        // 5. Profil Rodzica
+        // 3. PROFIL RODZICA
         if(session.role === 'parent' && d.users[session.id]) {
             const u = d.users[session.id];
-            document.getElementById('p-status').innerHTML = u.paid ? 
-                '<h2 style="color:green">OPŁACONE ✔</h2>' : 
-                `<h2 style="color:red">DO OPŁACENIA 💰</h2><p>Kwota: ${u.fee} PLN</p>`;
+            document.getElementById('p-child').innerText = u.child;
+            document.getElementById('p-status').innerHTML = u.paid ? '<h3 style="color:green">SKŁADKA OPŁACONA ✔</h3>' : '<h3 style="color:red">CZEKAMY NA WPŁATĘ 💰</h3>';
         }
     });
 }
 
-// Funkcje pomocnicze
-function del(path) { if(confirm("Usunąć?")) db.ref(path).remove(); }
+function toggleAttendance(playerId, current) {
+    const today = new Date().toISOString().slice(0, 10);
+    const next = current === 'none' ? 'present' : (current === 'present' ? 'absent' : 'none');
+    db.ref(`attendance/${today}/${playerId}`).set(next);
+}
+
 function pay(id, s) { db.ref('users/'+id).update({ paid: !s }); }
-function createTrainer() {
-    const name = prompt("Imię Trenera:"); const group = prompt("Grupa:");
-    const code = "TRN" + Math.floor(100+Math.random()*899);
-    if(name && group) db.ref('trainers').push({ name, groupId: group, code });
-}
+
 function createPlayer() {
-    const child = prompt("Imię Dziecka:"); const group = prompt("Grupa:"); const fee = prompt("Składka:", "150");
+    const child = prompt("Imię i Nazwisko Dziecka:");
+    const phone = prompt("Telefon do Rodzica (9 cyfr):");
+    const groupId = prompt("Grupa (np. 2014, 2015):");
     const code = child.substring(0,3).toUpperCase() + Math.floor(100+Math.random()*899);
-    if(child && group) db.ref('users').push({ child, groupId: group, fee, code, paid: false });
+    if(child && groupId) db.ref('users').push({ child, phone, groupId, code, paid: false });
 }
+
+function createTrainer() {
+    const name = prompt("Imię Trenera:");
+    const groupId = prompt("Grupa:");
+    const code = "TRN" + Math.floor(100+Math.random()*899);
+    if(name && groupId) db.ref('trainers').push({ name, groupId, code });
+}
+
 function addSchedule() {
-    const g = prompt("Grupa:"); const d = prompt("Dzień:"); const t = prompt("Godz/Miejsce:");
-    if(g && d) db.ref('schedule').push({ groupId: g, d, t });
+    const d = prompt("Dzień (np. Poniedziałek 22.03):");
+    const t = prompt("Godzina i miejsce:");
+    const groupId = prompt("Dla której grupy:");
+    if(d && t) db.ref('schedule').push({ d, t, groupId });
 }
-function addExercise() {
-    const title = prompt("Nazwa ćwiczenia:"); const desc = prompt("Opis:");
-    if(title) db.ref('exercises').push({ title, desc });
-}
+
 function showTab(n, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('tab'+n).classList.add('active');
@@ -262,8 +257,7 @@ function updateSW() {
     const m = Math.floor(diff/60000); const s = Math.floor((diff%60000)/1000); const ms = Math.floor((diff%1000)/10);
     document.getElementById('stopwatch-display').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}.${ms.toString().padStart(2,'0')}`;
 }
-function resetStopwatch() { clearInterval(interval); start = 0; run = false; document.getElementById('stopwatch-display').innerText = "00:00.00"; document.getElementById('sw-btn').innerText = "START"; document.getElementById('laps').innerHTML = ''; }
-function lapStopwatch() { if(run) { const l = document.createElement('div'); l.innerText = "LAP: " + document.getElementById('stopwatch-display').innerText; document.getElementById('laps').prepend(l); } }
+function resetStopwatch() { clearInterval(interval); start = 0; run = false; document.getElementById('stopwatch-display').innerText = "00:00.00"; document.getElementById('sw-btn').innerText = "START"; }
 </script>
 </body>
 </html>
